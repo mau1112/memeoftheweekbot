@@ -1,5 +1,6 @@
 import dayjs from 'dayjs';
 import isBetween from 'dayjs/plugin/isBetween';
+import utc from 'dayjs/plugin/utc';
 import {
     Client,
     GatewayIntentBits,
@@ -10,6 +11,9 @@ import {
     User,
 } from 'discord.js';
 import * as dotenv from 'dotenv';
+import cron from 'node-cron';
+
+dayjs.extend(utc);
 
 dotenv.config();
 
@@ -39,11 +43,14 @@ class ContestManager {
     contestStartDate: dayjs.Dayjs | null = null;
     contestEndDate: dayjs.Dayjs | null = null;
     memeLeaderboard: Map<string, number> = new Map();
+    lastAnnouncementDate: dayjs.Dayjs | null = null;
+
 
     startContest(): void {
         this.contestStartDate = dayjs();
         this.contestEndDate = this.contestStartDate.add(7, 'day');
         this.memeLeaderboard.clear();
+        this.lastAnnouncementDate = dayjs();
     }
 
     isContestRunning(): boolean {
@@ -58,6 +65,21 @@ const contestManager = new ContestManager();
 
 client.once('ready', () => {
     console.log('Bot is ready!');
+
+    // Schedule the task to be executed every Friday at 12:00 PM Colombia time
+    cron.schedule(
+        '0 12 * * 5',
+        async () => {
+            const winners = getTopMemes(3);
+            if (winners.length > 0) {
+                await announceWinner(winners);
+            }
+            contestManager.startContest();
+        },
+        {
+            timezone: 'America/Bogota',
+        }
+    );
 });
 
 client.on('interactionCreate', async interaction => {
@@ -92,12 +114,15 @@ async function handleMessageReaction(
 ): Promise<void> {
     if (user.bot) return;
 
+    const messageTime = dayjs(reaction.message.createdTimestamp);
+
     if (
         reaction.message.channel.id === process.env.MEME_CHANNEL_ID &&
         reaction.message.channel instanceof TextChannel &&
         (REACTION_EMOJIS?.includes(reaction.emoji.name ?? '') ||
             REACTION_EMOJIS?.includes(reaction.emoji.id ?? '')) &&
-        contestManager.isContestRunning()
+        contestManager.isContestRunning() &&
+        (!contestManager.lastAnnouncementDate || messageTime.isAfter(contestManager.lastAnnouncementDate))
     ) {
         const currentReactions = contestManager.memeLeaderboard.get(reaction.message.id) || 0;
         contestManager.memeLeaderboard.set(reaction.message.id, currentReactions + 1);

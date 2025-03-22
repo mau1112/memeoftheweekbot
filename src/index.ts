@@ -226,10 +226,6 @@ async function getTopMessages(
     const fetchPromises = [];
     let count = 0;
     for (const reaction of message.reactions.cache.values()) {
-      console.log('emoji: ', reaction.emoji)  
-      console.log('emoji name:', reaction.emoji.name)
-      console.log('emoji id:', reaction.emoji.id)  
-
       if (reactionEmojis.includes(reaction.emoji.name ?? '') || reactionEmojis.includes(reaction.emoji.id ?? '')) {
         fetchPromises.push(reaction.users.fetch());
 }}

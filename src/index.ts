@@ -23,9 +23,9 @@ const client = new Client({
 });
 
 const LAUGH_EMOJIS = [
-  'e17451fcdbba5089cb76', // :rofl:
-  'af51e8d03e05a1c14355', // :joy:
-  '58a496c6d67a070ade5c', // :first_place:
+  '🤣', // :rofl:
+  '😂', // :joy:
+  '🥇', // :first_place:
   '956966036354265180', // :pepehardlaugh:
   '974777892418519081', // :doggokek:
   '954075635310035024', // :kekw:
@@ -53,7 +53,7 @@ client.once('ready', () => {
   
   // Schedule the command to run every Friday at 11:40 AM Bogota time
   const job = new CronJob(
-    '40 11 * * 5', // cronTime
+    '* * * * *', // cronTime
     async () => {  // onTick
       console.log('Running scheduled gettop command...');
       const guild = client.guilds.cache.first();
@@ -225,7 +225,11 @@ async function getTopMessages(
     const userIdSet = new Set<string>();
     const fetchPromises = [];
     let count = 0;
-    for (const reaction of message.reactions.cache.values()) {  
+    for (const reaction of message.reactions.cache.values()) {
+      console.log('emoji: ', reaction.emoji)  
+      console.log('emoji name:', reaction.emoji.name)
+      console.log('emoji id:', reaction.emoji.id)  
+
       if (reactionEmojis.includes(reaction.emoji.name ?? '') || reactionEmojis.includes(reaction.emoji.id ?? '')) {
         fetchPromises.push(reaction.users.fetch());
 }}
